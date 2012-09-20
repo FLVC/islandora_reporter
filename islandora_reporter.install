@@ -1,0 +1,145 @@
+<?php
+/**
+ * @file
+ * This file handles setting up the database for the islandora_reporter module
+ *
+ * @author: William Panting
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * This function will build the database schema for the islandora_reporter module.
+ *
+ * @return array
+ *   $reproter_schema the schema definition.
+ */
+ function islandora_reporter_schema() {
+   $reporter_schema = array();
+
+   $reporter_schema['islandora_reporter_queries'] = array(
+     'description' => 'The queries that the module has stored.',
+     'fields' => array(
+       'query_index' => array(
+         'description' => 'The primary identifier for an instance of a query.',
+         'type' => 'serial',
+         'unsigned' => TRUE,
+         'not null' => TRUE,
+       ),
+       'query' => array(
+         'description' => 'A resource index query.',
+         'type' => 'text',
+         'size' => 'medium',
+         'not null' => TRUE,
+       ),
+       'query_name' => array(
+         'description' => 'A resource index query.',
+         'type' => 'varchar',
+         'length' => 255,
+         'not null' => TRUE,
+         'default' => '',
+       ),
+     ),
+     'primary key' => array('query_index'),
+   );
+
+   $reporter_schema['islandora_reporter_queries_to_CM'] = array(
+     'description' => 'The query to content model mapping to be used in the islandora_tabs hook.',
+     'fields' => array(
+       'query_index' => array(
+         'description' => 'The primary identifier for an instance of a query.',
+         'type' => 'int',
+         'unsigned' => TRUE,
+         'not null' => TRUE,
+       ),
+       'content_model' => array(
+         'description' => 'The content model associated with the query index.',
+         'type' => 'varchar',
+         'length' => 255,
+         'not null' => TRUE,
+         'default' => '',
+       ),
+       'content_model_label' => array(
+         'description' => 'The label to use for tabs.',
+         'type' => 'varchar',
+         'length' => 255,
+         'not null' => TRUE,
+         'default' => '',
+       ),
+     ),
+     'primary key' => array('query_index', 'content_model'),
+   );
+
+   $reporter_schema['islandora_reporter_query_returns_to_label'] = array(
+     'description' => 'Labels for the return values of queries.',
+     'fields' => array(
+       'query_index' => array(
+         'description' => 'The primary identifier for an instance of a query.',
+         'type' => 'int',
+         'unsigned' => TRUE,
+         'not null' => TRUE,
+       ),
+       'return_string' => array(
+         'description' => 'The return string needing a human readable label.',
+         'type' => 'varchar',
+         'length' => 255,
+         'not null' => TRUE,
+         'default' => '',
+       ),
+       'return_label' => array(
+         'description' => 'The human readable label for the return string.',
+         'type' => 'varchar',
+         'length' => 255,
+         'not null' => TRUE,
+         'default' => '',
+       ),
+     ),
+     'primary key' => array('query_index', 'return_string'),
+   );
+
+   $reporter_schema['islandora_reporter_query_preg_to_label'] = array(
+     'description' => 'Labels for the query parameters.',
+     'fields' => array(
+       'query_index' => array(
+         'description' => 'The primary identifier for an instance of a query.',
+         'type' => 'int',
+         'unsigned' => TRUE,
+         'not null' => TRUE,
+       ),
+       'preg' => array(
+         'description' => 'The query part to replace.',
+         'type' => 'varchar',
+         'length' => 255,
+         'not null' => TRUE,
+         'default' => '',
+       ),
+       'preg_label' => array(
+         'description' => 'The label to use when making forms for replacing the query part.',
+         'type' => 'varchar',
+         'length' => 255,
+         'not null' => TRUE,
+         'default' => '',
+       ),
+     ),
+     'primary key' => array('query_index', 'preg'),
+   );
+
+   return $reporter_schema;
+ }
+
+/**
+ * Implements hook_install().
+ *
+ * This function calls the schema hook for the module.
+ */
+function islandora_reporter_install() {
+   drupal_install_schema('islandora_reporter');
+}
+
+/**
+ * This function handles removing the islandora_reporter's
+ * database schema
+ */
+function islandora_reporter_uninstall() {
+  drupal_uninstall_schema('islandora_reporter');
+}

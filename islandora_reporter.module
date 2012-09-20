@@ -1,0 +1,627 @@
+<?php
+/**
+ * @file
+ *   The main file for islandora_reporter.
+ */
+
+/**
+ * Implements hook_menu().
+ *
+ * @return array
+ *   $menu the menu entries for the module.
+ */
+function islandora_reporter_menu() {
+  $menu = array();
+
+  $menu['admin/content/islandora_reporter'] = array(
+    'title' => t('Islandora Reports'),
+    'description' => t("Configure Islandora's RI reports."),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('islandora_reporter_configure_queries'),
+    'access arguments' => array('islandora_reporter_manage'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $menu['admin/content/islandora_reporter/add'] = array(
+    'title' => t('Islandora Reports'),
+    'description' => t("Add an RI query."),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('islandora_reporter_configure_query'),
+    'access arguments' => array('islandora_reporter_manage'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $menu['admin/content/islandora_reporter/%/edit'] = array(
+    'title' => t('Islandora Reports'),
+    'description' => t("Edit an RI query."),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('islandora_reporter_configure_query', 3),
+    'access arguments' => array('islandora_reporter_manage'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $menu['admin/content/islandora_reporter/%/delete'] = array(
+    'title' => t('Islandora Reports'),
+    'description' => t("Edit an RI query."),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('islandora_reporter_delete_query', 3),
+    'access arguments' => array('islandora_reporter_manage'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $menu['islandora_reporter/query'] = array(
+    'title' => t('Islandora Reports'),
+    'description' => t("Run a query."),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('islandora_reporter_select_query'),
+    'access arguments' => array('islandora_reporter_use'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $menu['islandora_reporter/query/%'] = array(
+    'title' => t('Islandora Reports'),
+    'description' => t("Run a query."),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('islandora_reporter_run_query', 2),
+    'access arguments' => array('islandora_reporter_use'),
+    'type' => MENU_CALLBACK,
+  );
+
+  // The query may not always be run through a form.
+  $menu['islandora_reporter/report/%/%'] = array(
+    'title' => t('Islandora Reports'),
+    'page callback' => 'islandora_reporter_get_report',
+    'type' => MENU_CALLBACK,
+    'page arguments' => array(2, 3),
+    'access arguments' => array('islandora_reporter_use'),
+  );
+  $menu['islandora_reporter/report/%'] = array(
+    'title' => t('Islandora Reports'),
+    'page callback' => 'islandora_reporter_get_report',
+    'type' => MENU_CALLBACK,
+    'page arguments' => array(2),
+    'access arguments' => array('islandora_reporter_use'),
+  );
+
+  return $menu;
+}
+
+/**
+ * Implements hook_perm().
+ *
+ * @return array
+ *   The array of permssions used in the islandora_reporter module.
+ */
+function islandora_reporter_perm() {
+
+  return array('islandora_reporter_manage', 'islandora_reporter_use');
+
+}
+
+/**
+ * This function will provide a form to
+ * run a resource index query.
+ *
+ * @param array &$form_state
+ *   The state of the form.
+ * @param ineger $query_index
+ *   The index in the DB of the query to prepare a form for.
+ *
+ * @return array
+ *   $form The form definition.
+ */
+function islandora_reporter_run_query(&$form_state, $query_index) {
+  module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
+  $form = array();
+
+  $preg_mapping = islandora_reporter_get_pregs_and_labels($query_index);
+  foreach ($preg_mapping as $preg => $label) {
+    $form[$preg]['is_URI'] = array(
+      '#type' => 'radios',
+      '#title' => t('Is URI?'),
+      '#options' => array(0 => t('No'), 1 => t('Yes')),
+      '#default_value' => 1,
+      '#required' => TRUE,
+      '#tree' => TRUE,
+    );
+    $form[$preg]['preg'] = array(
+      '#type' => 'textfield',
+      '#title' => $label,
+      '#required' => TRUE,
+      '#maxlength' => 255,
+      '#default_value' => $preg,
+    );
+  }
+
+  // Submit.
+  $form['Run'] = array(
+    '#type' => 'submit',
+    '#weight' => '1',
+    '#value' => t('Run'),
+  );
+
+  // Needed in submit handler.
+  $form_state['storage']['query_index'] = $query_index;
+
+  return $form;
+}
+
+/**
+ * This function is the form for setting up queries.
+ *
+ * @param array &$form_state
+ *   The state of the form.
+ *
+ * @return array
+ *   $form The form definition.
+ */
+function islandora_reporter_configure_queries(&$form_state) {
+  module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
+  $form = array();
+
+  // List of queries currently in database.
+  $queries = islandora_reporter_get_all_queries();
+  foreach ($queries as $query) {
+    $index = $query['query_index'];
+    $query_name = $query['query_name']?$query['query_name']:$index;
+
+    $form[$index]['Label'] = array(
+      '#value' => "<H4>$query_name</H4>",
+    );
+    // Parents could be used http://drupal.org/node/781556 only when name set.
+    $form[$index]['Edit'] = array(
+      '#type' => 'submit',
+      '#weight' => '1',
+      '#value' => t('Edit'),
+      '#name' => $index,
+    );
+    $form[$index]['Delete'] = array(
+      '#type' => 'submit',
+      '#weight' => '2',
+      '#value' => t('Delete'),
+      '#name' => $index,
+    );
+  }
+  // Button for adding a query to the database.
+  $form['Add'] = array(
+    '#type' => 'submit',
+    '#weight' => '1',
+    '#value' => t('Add Query'),
+  );
+
+  return $form;
+}
+
+/**
+ * This function will display the form for
+ * selecting a stored RI query to run.
+ *
+ * @param array &$form_state
+ *   The state of the form.
+ *
+ * @return array
+ *   $form The form definition.
+ */
+function islandora_reporter_select_query(&$form_state) {
+  module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
+  $form = array();
+
+  // List of queries currently in database.
+  $queries = islandora_reporter_get_all_queries();
+  foreach ($queries as $query) {
+    $index = $query['query_index'];
+    $query_name = $query['query_name']?$query['query_name']:$index;
+
+    $form[$index]['Label'] = array(
+      '#value' => "<H4>$query_name</H4>",
+    );
+    // Parents could be used http://drupal.org/node/781556 only when name set.
+    $form[$index]['Select'] = array(
+      '#type' => 'submit',
+      '#weight' => '1',
+      '#value' => t('Select'),
+      '#name' => $index,
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * This funciton is the form for changing a query.
+ *
+ * @param array &$form_state
+ *   The state of the form.
+ * @param ineger $query_index
+ *   The index in the DB of the query to prepare a form for.
+ *
+ * @return array
+ *   $form The form definition.
+ */
+function islandora_reporter_configure_query(&$form_state, $query_index = NULL) {
+  module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
+
+  $form = array();
+
+  // If there is a query index then populate defaults.
+  if (isset($query_index)) {
+    $query_info = islandora_reporter_get_full_query_info($query_index);
+    $query_name = $query_info['name'];
+    $query = $query_info['query'];
+    $returns = json_encode($query_info['returns']);
+    $pregs = json_encode($query_info['pregs']);
+    $content_models = json_encode($query_info['content_models']);
+  }
+
+  $form['query_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Query Name'),
+    '#required' => TRUE,
+    '#maxlength' => 255,
+    '#default_value' => isset($query_name)?$query_name:'',
+  );
+  $form['query'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Query'),
+    '#required' => TRUE,
+    '#default_value' => isset($query)?$query:'',
+    '#description' => 'SPARQL Query tested.',
+  );
+  $form['returns'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Returns/Label Mapping'),
+    '#default_value' => isset($returns)?$returns:'',
+    '#description' => 'A JSON object {"return":"Label","return":"Label"}. Omit $ character.',
+  );
+  $form['pregs'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Match/Label Mapping'),
+    '#default_value' => isset($pregs)?$pregs:'',
+    '#description' => 'A JSON object {"preg":"Label","preg":"Label"}. $PID preg reserved for islandora_tabs implementation.  Make sure to use $ for query to be used with and without pregs.',
+  );
+  $form['content_models'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Content Models'),
+    '#default_value' => isset($content_models)?$content_models:'',
+    '#description' => 'A JSON object {"content:model":"Label","content:model":"Label"}.',
+  );
+
+  // Button for saving any changes to the database.
+  $form['Save'] = array(
+    '#type' => 'submit',
+    '#weight' => '1',
+    '#value' => t('Save'),
+  );
+  $form['Cancel'] = array(
+    '#type' => 'submit',
+    '#weight' => '1',
+    '#value' => t('Cancel'),
+  );
+
+  // Needed in submit handler.
+  $form_state['storage']['query_index'] = $query_index;
+
+  return $form;
+}
+
+/**
+ * This funciton is the form for deleting a query.
+ *
+ * @param array &$form_state
+ *   The state of the form.
+ * @param ineger $query_index
+ *   The index in the DB of the query to prepare a form for.
+ *
+ * @return array
+ *   $form The form definition.
+ */
+function islandora_reporter_delete_query(&$form_state, $query_index) {
+  module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
+
+  $form = array();
+
+  $form['Label'] = array(
+    '#value' => "<H4>Are you sure you want to delete the query definition?</H4>",
+  );
+  $form['Delete'] = array(
+    '#type' => 'submit',
+    '#weight' => '1',
+    '#value' => t('Delete'),
+  );
+  $form['Cancel'] = array(
+    '#type' => 'submit',
+    '#weight' => '2',
+    '#value' => t('Cancel'),
+  );
+
+  // Needed in submit handler.
+  $form_state['storage']['query_index'] = $query_index;
+
+  return $form;
+}
+
+/**
+ * This function will handle the submission of a form
+ * to run a resource index query and call the function to display
+ * the result.
+ *
+ * @param array $form
+ *   The form submitted.
+ * @param array &$form_state
+ *   The state of the form.
+ */
+function islandora_reporter_run_query_submit($form, &$form_state) {
+  module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
+
+  $query_index = $form_state['storage']['query_index'];
+  $preg_mapping = islandora_reporter_get_pregs_and_labels($query_index);
+  $preg_definition = array();
+
+  foreach ($preg_mapping as $preg => $label) {
+    if (isset($form[$preg])) {
+      $preg_definition[] = array(
+        'preg' => $preg,
+        'replace' => $form[$preg]['preg']['#value'],
+        'is_URI' => $form[$preg]['is_URI']['#value']?TRUE:FALSE,
+      );
+    }
+  }
+
+  $preg_definition = urlencode(serialize($preg_definition));
+
+  // All these vars being unset interfere with the redirect if left alone.
+  unset($form_state['storage']);
+  unset($form['destination']);
+  unset($form['#action']);
+
+  // Go to report.
+  $form_state['redirect'] = "islandora_reporter/report/$query_index/$preg_definition";
+}
+
+/**
+ * This function handles the submision of the form for
+ * selecting an RI query to run.
+ * It redirects the user to the run a query form for the
+ * selected form..
+ *
+ * @param array $form
+ *   The form submitted.
+ * @param array &$form_state
+ *   The state of the form.
+ */
+function islandora_reporter_select_query_submit($form, &$form_state) {
+
+  $query_index = $form_state['clicked_button']['#array_parents'][0];
+  // Send to run a query.
+  if ($form_state['clicked_button']['#value'] == 'Select') {
+    $form_state['redirect'] = "islandora_reporter/query/$query_index";
+  }
+}
+
+/**
+ * This function handles the submision of the form for
+ * modifying resource queries.
+ * It redirects the user to other forms depending on
+ * the action they chose.
+ *
+ * @param array $form
+ *   The form submitted.
+ * @param array &$form_state
+ *   The state of the form.
+ */
+function islandora_reporter_configure_queries_submit($form,
+&$form_state) {
+
+  $query_index = $form_state['clicked_button']['#array_parents'][0];
+  // Send to add a query.
+  if ($form_state['clicked_button']['#value'] == 'Add Query') {
+    $form_state['redirect'] = "admin/content/islandora_reporter/add";
+  }
+  // Send to Edit a query definition.
+  if ($form_state['clicked_button']['#value'] == 'Edit') {
+    $form_state['redirect'] = "admin/content/islandora_reporter/$query_index/edit";
+  }
+  // Confirm delete a query definition.
+  if ($form_state['clicked_button']['#value'] == 'Delete') {
+    $form_state['redirect'] = "admin/content/islandora_reporter/$query_index/delete";
+  }
+}
+
+/**
+ * This function handles the submision of the form for
+ * a creating/editing a resource index query.
+ *
+ * @param array $form
+ *   The form submitted.
+ * @param array &$form_state
+ *   The state of the form.
+ */
+function islandora_reporter_configure_query_submit($form, &$form_state) {
+  module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
+
+  if ($form_state['clicked_button']['#value'] == 'Save') {
+    $query_info = array();
+    // Read values.
+    $query_index = $form_state['storage']['query_index'];
+    $query_info['name'] = $form_state['values']['query_name'];
+    $query_info['query'] = $form_state['values']['query'];
+    $query_info['returns'] = json_decode($form_state['values']['returns'], TRUE);
+    $query_info['pregs'] = json_decode($form_state['values']['pregs'], TRUE);
+    $query_info['content_models'] = json_decode($form_state['values']['content_models'], TRUE);
+    // Remove existing definition if it exists but maintain query_index
+    if ($query_index) {
+      islandora_reporter_add_full_query_info($query_info, $query_index);
+    }
+      // Add query definition to database.
+    else {
+      islandora_reporter_add_full_query_info($query_info);
+    }
+
+  }
+
+  // All these vars being unset interfere with the redirect if left alone.
+  unset($form_state['storage']);
+  unset($form['destination']);
+  unset($form['#action']);
+
+  // Redirect.
+  $form_state['redirect'] = "admin/content/islandora_reporter";
+}
+
+/**
+ * This function handles the submision of the form for
+ * deleting a resource index query.
+ *
+ * @param array $form
+ *   The form submitted.
+ * @param array &$form_state
+ *   The state of the form.
+ */
+function islandora_reporter_delete_query_submit($form, &$form_state) {
+  module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
+
+  if ($form_state['clicked_button']['#value'] == 'Delete') {
+    $query_index = $form_state['storage']['query_index'];
+    islandora_reporter_remove_query($query_index);
+  }
+
+  // All these vars being unset interfere with the redirect if left alone.
+  unset($form_state['storage']);
+  unset($form['destination']);
+  unset($form['#action']);
+
+  $form_state['redirect'] = "admin/content/islandora_reporter";
+}
+
+/**
+ * The index of the query to provide a report for.
+ *
+ * @param integer $query_index
+ *   The index in the DB of the query to prepare a form for.
+ *
+ * @param array $preg_definitions
+ *   The definition of substrings to replace in the query.
+ *   $preg_definitions = array(array('preg' => preg,
+ *   'replace' => 'replace',
+ *   'is_URI' => 'is_URI'));
+ *   is_URI makes the replace wraped in '<info:fedora/' . $replace . '>'
+ *   so that PIDs and pid/dsid constructs can be sent through
+ *
+ * @return markup
+ *   The results of theme_table
+ */
+function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
+  module_load_include('inc', 'fedora_repository', 'api/tuque');
+  module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
+  $headers = array();
+  $rows = array();
+  $tuque = new IslandoraTuque();
+  $query_map = islandora_reporter_get_query($query_index);
+  $query = $query_map['query'];
+  // Edit query.
+  if (isset($preg_definitions)) {
+    // Convert to array if string. Lets the report be called via URL.
+    if (!is_array($preg_definitions)) {
+      $preg_definitions = unserialize($preg_definitions);
+    }
+
+    foreach ($preg_definitions as $preg_definition) {
+      $preg = $preg_definition['preg'];
+      $replace = $preg_definition['replace'];
+      if (!isset($preg_definition['is_URI'])) {
+        $preg_definition['is_URI'] = FALSE;
+      }
+      // Only sub in if preg and replace are different.
+      if ($preg_definition['preg'] != $preg_definition['replace']) {
+        if ($preg_definition['is_URI']) {
+          $query = preg_replace("/\\$preg/", '<info:fedora/' . $replace . '>', $query);
+        }
+        else {
+          $query = preg_replace("/\\$preg/", $replace, $query);
+        }
+      }
+    }
+  }
+
+  // Run query.
+  $query_results = $tuque->repository->ri->sparqlQuery($query);
+  // Iterate over each result.
+  foreach ($query_results as $result) {
+    $row = array();
+    // Iterate over each part of the result.
+    foreach ($result as $result_field => $result_values) {
+      // Create Headers.
+      if (!in_array($result_field, $headers)) {
+        $headers[] = $result_field;
+      }
+      // Add record to rows after headers for record are extracted.
+      foreach ($headers as $header) {
+        $column_value = '';
+        if ($result_field == $header) {
+          if (isset($result_values['uri'])) {
+            $value = $result_values['value'];
+            $label = $result_values['value'];
+            $column_value = l($label, "fedora/repository/$value");
+          }
+          else {
+            $column_value = $result_values['value'];
+          }
+        }
+      }
+      $row[] = $column_value;
+    }
+    $rows[] = $row;
+  }
+  // Transform headers to human readable form.
+  $header_map = islandora_reporter_get_returns_and_labels($query_index);
+  foreach ($headers as $key => $header) {
+    if (isset($header_map[$header])) {
+      $headers[$key] = $header_map[$header];
+    }
+  }
+  return theme_table($headers, $rows);
+}
+
+/**
+ * Implements islandora_tabs().
+ *
+ * This will display queries associated with the content model.
+ *
+ * @param array $content_models
+ *   An array of content model objects that are associated
+ *   with the current object.
+ * @param string $pid
+ *   The string indicating the Fedora PID of the current object.
+ *
+ * @return array
+ *   The deffinition of the tabs to add to the object display.
+ */
+function islandora_reporter_islandora_tabs($content_models, $pid) {
+  module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
+  $tabs = array();
+
+  /* For each content model figure out if there is a query and if so
+    print the report in a tab*/
+  foreach ($content_models as $content_model) {
+    $queries = islandora_reporter_get_all_queries($content_model->pid);
+
+    foreach ($queries as $query) {
+      $preg_definitions = array(array('preg' => '$PID', 'replace' => $pid, 'is_URI' => TRUE));
+
+      $report = islandora_reporter_get_report($query['query_index'], $preg_definitions);
+
+      // Only show a tab if it is pupulated.
+      if ($report) {
+        $content_model_mapping = islandora_reporter_get_CMs_and_labels($query['query_index']);
+        $content_model_label = $content_model_mapping[$content_model->pid];
+        $tabs[$content_model->pid] = array(
+          '#type' => 'tabpage',
+          '#title' => $content_model_label,
+          '#content' => $report,
+        );
+      }
+    }
+  }
+
+  return $tabs;
+}

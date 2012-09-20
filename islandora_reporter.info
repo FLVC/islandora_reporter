@@ -1,0 +1,6 @@
+name = Islandora Reporter
+dependencies[] = fedora_repository
+description = Lets one run custom RI queries.
+package = Islandora Tools
+version = 6.x-dev
+core = 6.x
