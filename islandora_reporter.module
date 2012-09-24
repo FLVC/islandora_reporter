@@ -572,15 +572,14 @@ function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
         if ($result_field == $header) {
           if (isset($result_values['uri'])) {
             $value = $result_values['value'];
-            $label = $result_values['value'];
-            $column_value = l($label, "fedora/repository/$value");
+            $column_value = l($value, "fedora/repository/$value");
           }
           else {
             $column_value = $result_values['value'];
           }
+          $row[] = $column_value;
         }
       }
-      $row[] = $column_value;
     }
     $rows[] = $row;
   }
