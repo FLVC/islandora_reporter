@@ -208,6 +208,10 @@ function islandora_reporter_select_query(&$form_state) {
 
   // List of queries currently in database.
   $queries = islandora_reporter_get_all_queries();
+  // Print helpful message if no queries are present.
+  if (!$queries) {
+    drupal_set_message('There are no queries in the database. You can create them in' . l(t(' content mangement'), 'admin/content/islandora_reporter'));
+  }
   foreach ($queries as $query) {
     $index = $query['query_index'];
     $query_name = $query['query_name']?$query['query_name']:$index;
