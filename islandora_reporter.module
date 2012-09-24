@@ -548,7 +548,15 @@ function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
   }
 
   // Run query.
-  $query_results = $tuque->repository->ri->sparqlQuery($query);
+  try {
+    $query_results = $tuque->repository->ri->sparqlQuery($query);
+  }
+  catch (RepositoryException $e) {
+    // Should let people know when the query would be causing a white screen.
+    drupal_set_message('Problem running query in Islandora Reporter, check logs. code: ' . $e->getCode());
+    return;
+  }
+
   // Iterate over each result.
   foreach ($query_results as $result) {
     $row = array();
