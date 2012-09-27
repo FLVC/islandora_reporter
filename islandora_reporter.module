@@ -511,8 +511,8 @@ function islandora_reporter_delete_query_submit($form, &$form_state) {
  *   is_URI makes the replace wraped in '<info:fedora/' . $replace . '>'
  *   so that PIDs and pid/dsid constructs can be sent through
  *
- * @return markup
- *   The results of theme_table
+ * @return mixed
+ *   The results of theme_table() or nothing.
  */
 function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
   module_load_include('inc', 'fedora_repository', 'api/tuque');
@@ -590,7 +590,13 @@ function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
       $headers[$key] = $header_map[$header];
     }
   }
-  return theme_table($headers, $rows);
+
+  /* Theme table always returns a table so when we need
+   * to return nothing we don't call it.*/
+  if ($rows) {
+    return theme_table($headers, $rows);
+  }
+  return;
 }
 
 /**
