@@ -625,7 +625,7 @@ function islandora_reporter_islandora_tabs($content_models, $pid) {
       if ($report) {
         $content_model_mapping = islandora_reporter_get_CMs_and_labels($query['query_index']);
         $content_model_label = $content_model_mapping[$content_model->pid];
-        $tabs[$content_model->pid] = array(
+        $tabs['islandora_reporter' . $content_model->pid] = array(
           '#type' => 'tabpage',
           '#title' => $content_model_label,
           '#content' => $report,
