@@ -3,6 +3,7 @@ islandora_reporter
 
 Lets one store and run SPARQL queries.
 Requires Tuque API library.
+If you want a print button on non-content model generated reports do so through the print module interface.
 
 Settings for a query we should all be familiar with:
 

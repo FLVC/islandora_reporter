@@ -526,7 +526,11 @@ function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
   if (isset($preg_definitions)) {
     // Convert to array if string. Lets the report be called via URL.
     if (!is_array($preg_definitions)) {
+      $serialized_preg_definitions = $preg_definitions;
       $preg_definitions = unserialize($preg_definitions);
+    }
+    else {
+      $serialized_preg_definitions = serialize($preg_definitions);
     }
 
     foreach ($preg_definitions as $preg_definition) {
@@ -619,22 +623,31 @@ function islandora_reporter_islandora_tabs($content_models, $pid) {
 
   /* For each content model figure out if there is a query and if so
     print the report in a tab*/
+  $tab_count = 0;
   foreach ($content_models as $content_model) {
     $queries = islandora_reporter_get_all_queries($content_model->pid);
 
     foreach ($queries as $query) {
+      $tab_count++;
       $preg_definitions = array(array('preg' => '$PID', 'replace' => $pid, 'is_URI' => TRUE));
 
       $report = islandora_reporter_get_report($query['query_index'], $preg_definitions);
+
+      // Print button.
+      $query_index = $query['query_index'];
+      $serialized_preg_definitions = serialize($preg_definitions);
+      $print_button = print_insert_link("print/islandora_reporter/report/$query_index/$serialized_preg_definitions");
 
       // Only show a tab if it is pupulated.
       if ($report) {
         $content_model_mapping = islandora_reporter_get_CMs_and_labels($query['query_index']);
         $content_model_label = $content_model_mapping[$content_model->pid];
-        $tabs['islandora_reporter' . $content_model->pid] = array(
+        /* The report has the potential to be quite long,
+         * so the print button should be at the top.*/
+        $tabs["islandora_reporter_$tab_count" . $content_model->pid] = array(
           '#type' => 'tabpage',
           '#title' => $content_model_label,
-          '#content' => $report,
+          '#content' => $print_button . $report,
         );
       }
     }
