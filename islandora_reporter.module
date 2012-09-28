@@ -600,6 +600,11 @@ function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
   if ($rows) {
     return theme_table($headers, $rows);
   }
+  /* Need to return something to avoid white screen
+  if this is the callback function.*/
+  elseif (strpos(request_uri(), 'islandora_reporter/report/')) {
+    return 'No results.';
+  }
   return;
 }
 
