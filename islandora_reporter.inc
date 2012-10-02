@@ -7,6 +7,34 @@
  */
 
 /**
+ * This function wraps the print module's print_insert_link function.
+ * It lets on specify the visible text of the link.
+ *
+ * @param string $path
+ *   The path to create the printer friendly link for.
+ * @param string $label
+ *   The text to show for the link
+ *
+ * @return markup
+ *   The button
+ */
+function islandora_reporter_print_insert_link($path, $label = NULL) {
+  $print_button = print_insert_link($path);
+
+  // Modify the text if provided.
+  if (!is_null($label)) {
+    $print_button_DOMDoc = DOMDocument::loadHTML($print_button);
+    $anchors = $print_button_DOMDoc->getElementsByTagName('a');
+    $anchors->item(0)->nodeValue = $label;
+    // Make sure to return the parent span.
+    $print_button = $print_button_DOMDoc->saveXML($anchors->item(0)->parentNode);
+  }
+
+  return $print_button;
+}
+
+
+/**
  * This function will return all queries from the database.
  *
  * @param string $content_model

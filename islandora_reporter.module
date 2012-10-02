@@ -640,8 +640,10 @@ function islandora_reporter_islandora_tabs($content_models, $pid) {
 
       // Print button.
       $query_index = $query['query_index'];
+      $query_name = $query['query_name'];
       $serialized_preg_definitions = serialize($preg_definitions);
-      $print_button = print_insert_link("print/islandora_reporter/report/$query_index/$serialized_preg_definitions");
+      $print_button = islandora_reporter_print_insert_link("print/islandora_reporter/report/$query_index/$serialized_preg_definitions",
+          "Printer Friendly $query_name");
 
       // Only show a tab if it is pupulated.
       if ($report) {
