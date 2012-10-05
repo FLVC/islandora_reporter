@@ -21,8 +21,8 @@
 function islandora_reporter_print_insert_link($path, $label = NULL) {
   $print_button = print_insert_link($path);
 
-  // Modify the text if provided.
-  if (!is_null($label)) {
+  // Modify the text if provided and a print button is present.
+  if (!is_null($label) && $print_button) {
     $print_button_DOMDoc = DOMDocument::loadHTML($print_button);
     $anchors = $print_button_DOMDoc->getElementsByTagName('a');
     $anchors->item(0)->nodeValue = $label;
