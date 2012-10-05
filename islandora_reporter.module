@@ -270,24 +270,28 @@ function islandora_reporter_configure_query(&$form_state, $query_index = NULL) {
     '#required' => TRUE,
     '#default_value' => isset($query)?$query:'',
     '#description' => 'SPARQL Query tested.',
+    '#wysiwyg' => FALSE,
   );
   $form['returns'] = array(
     '#type' => 'textarea',
     '#title' => t('Returns/Label Mapping'),
     '#default_value' => isset($returns)?$returns:'',
     '#description' => 'A JSON object {"return":"Label","return":"Label"}. Omit $ character.',
+    '#wysiwyg' => FALSE,
   );
   $form['pregs'] = array(
     '#type' => 'textarea',
     '#title' => t('Match/Label Mapping'),
     '#default_value' => isset($pregs)?$pregs:'',
     '#description' => 'A JSON object {"preg":"Label","preg":"Label"}. $PID preg reserved for islandora_tabs implementation.  Make sure to use $ for query to be used with and without pregs.',
+    '#wysiwyg' => FALSE,
   );
   $form['content_models'] = array(
     '#type' => 'textarea',
     '#title' => t('Content Models'),
     '#default_value' => isset($content_models)?$content_models:'',
     '#description' => 'A JSON object {"content:model":"Label","content:model":"Label"}.',
+    '#wysiwyg' => FALSE,
   );
 
   // Button for saving any changes to the database.
