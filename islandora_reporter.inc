@@ -61,8 +61,13 @@ function islandora_reporter_get_all_queries($content_model = NULL) {
 
   $resource = db_query($DB_query);
 
-  while ($row = db_fetch_array($resource)) {
-    $queries[] = $row;
+  //while ($row = db_fetch_array($resource)) {
+  foreach ($resource as $row) {
+    //$queries[] = $row;
+    $queries[] = array(
+      'query_index' => $row->query_index,
+      'query_name' => $row->query_name,
+    );
   }
 
   return $queries;
@@ -154,12 +159,19 @@ function islandora_reporter_get_query($query_index) {
   $DB_query = "SELECT query, query_name FROM {islandora_reporter_queries} WHERE query_index='$query_index'";
   $resource = db_query($DB_query);
 
-  while ($row = db_fetch_array($resource)) {
-    $query[] = $row;
+  //while ($row = db_fetch_array($resource)) {
+  foreach ($resource as $row) {
+    //$query[] = $row;
+    $queries[] = array(
+      'query' => $row->query,
+      'query_name' => $row->query_name,
+    );
+
   }
 
   // Only one result.
-  return $query[0];
+  //return $query[0];
+  return $queries[0];
 }
 
 /**
@@ -226,8 +238,10 @@ function islandora_reporter_get_returns_and_labels($query_index) {
   $DB_query = "SELECT return_string, return_label FROM {islandora_reporter_query_returns_to_label} WHERE query_index='$query_index'";
   $resource = db_query($DB_query);
 
-  while ($row = db_fetch_array($resource)) {
-    $mapping[$row['return_string']] = $row['return_label'];
+  //while ($row = db_fetch_array($resource)) {
+  foreach ($resource as $row) {
+    //$mapping[$row['return_string']] = $row['return_label'];
+    $mapping[$row->return_string] = $row->return_label;
   }
 
   return $mapping;
@@ -282,8 +296,10 @@ function islandora_reporter_get_pregs_and_labels($query_index) {
   $DB_query = "SELECT preg, preg_label FROM {islandora_reporter_query_preg_to_label} WHERE query_index='$query_index'";
   $resource = db_query($DB_query);
 
-  while ($row = db_fetch_array($resource)) {
-    $mapping[$row['preg']] = $row['preg_label'];
+  //while ($row = db_fetch_array($resource)) {
+  foreach ($resource as $row) {
+    //$mapping[$row['preg']] = $row['preg_label'];
+    $mapping[$row->preg] = $row->preg_label;
   }
 
   return $mapping;
@@ -338,8 +354,10 @@ function islandora_reporter_get_CMs_and_labels($query_index) {
   $DB_query = "SELECT content_model, content_model_label FROM {islandora_reporter_queries_to_CM} WHERE query_index='$query_index'";
   $resource = db_query($DB_query);
 
-  while ($row = db_fetch_array($resource)) {
-    $mapping[$row['content_model']] = $row['content_model_label'];
+  //while ($row = db_fetch_array($resource)) {
+  foreach ($resource as $row) {
+    //$mapping[$row['content_model']] = $row['content_model_label'];
+    $mapping[$row->content_model] = $row->content_model_label;
   }
 
   return $mapping;

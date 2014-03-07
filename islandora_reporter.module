@@ -13,7 +13,7 @@
 function islandora_reporter_menu() {
   $menu = array();
 
-  $menu['admin/content/islandora_reporter'] = array(
+  $menu['admin/islandora/islandora_reporter'] = array(
     'title' => t('Islandora Reports'),
     'description' => t("Configure Islandora's RI reports."),
     'page callback' => 'drupal_get_form',
@@ -22,7 +22,7 @@ function islandora_reporter_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
-  $menu['admin/content/islandora_reporter/add'] = array(
+  $menu['admin/islandora/islandora_reporter/add'] = array(
     'title' => t('Islandora Reports'),
     'description' => t("Add an RI query."),
     'page callback' => 'drupal_get_form',
@@ -31,7 +31,7 @@ function islandora_reporter_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $menu['admin/content/islandora_reporter/%/edit'] = array(
+  $menu['admin/islandora/islandora_reporter/%/edit'] = array(
     'title' => t('Islandora Reports'),
     'description' => t("Edit an RI query."),
     'page callback' => 'drupal_get_form',
@@ -40,7 +40,7 @@ function islandora_reporter_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $menu['admin/content/islandora_reporter/%/delete'] = array(
+  $menu['admin/islandora/islandora_reporter/%/delete'] = array(
     'title' => t('Islandora Reports'),
     'description' => t("Edit an RI query."),
     'page callback' => 'drupal_get_form',
@@ -92,9 +92,20 @@ function islandora_reporter_menu() {
  * @return array
  *   The array of permssions used in the islandora_reporter module.
  */
-function islandora_reporter_perm() {
+function islandora_reporter_permission() {
 
-  return array('islandora_reporter_manage', 'islandora_reporter_use');
+  //return array('islandora_reporter_manage', 'islandora_reporter_use');
+
+  return array(
+    'islandora_reporter_manage' => array(
+      'title' => t('Manage reporter'),
+      'description' => t('Manage reporter module.'),
+    ),
+    'islandora_reporter_use' => array(
+      'title' => t('Use reporter'),
+      'description' => t('Use reporter module.'),
+    ),
+  );
 
 }
 
@@ -110,7 +121,7 @@ function islandora_reporter_perm() {
  * @return array
  *   $form The form definition.
  */
-function islandora_reporter_run_query(&$form_state, $query_index) {
+function islandora_reporter_run_query($form, $form_state, $query_index) {
   module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
   $form = array();
 
@@ -155,18 +166,20 @@ function islandora_reporter_run_query(&$form_state, $query_index) {
  * @return array
  *   $form The form definition.
  */
-function islandora_reporter_configure_queries(&$form_state) {
+function islandora_reporter_configure_queries($form, $form_state) {
   module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
   $form = array();
 
   // List of queries currently in database.
+  $queries = array();
   $queries = islandora_reporter_get_all_queries();
   foreach ($queries as $query) {
     $index = $query['query_index'];
     $query_name = $query['query_name']?$query['query_name']:$index;
 
     $form[$index]['Label'] = array(
-      '#value' => "<H4>$query_name</H4>",
+      //'#value' => "<H4>$query_name</H4>",
+      '#markup' => "<H4>$query_name</H4>",
     );
     // Parents could be used http://drupal.org/node/781556 only when name set.
     $form[$index]['Edit'] = array(
@@ -202,7 +215,7 @@ function islandora_reporter_configure_queries(&$form_state) {
  * @return array
  *   $form The form definition.
  */
-function islandora_reporter_select_query(&$form_state) {
+function islandora_reporter_select_query($form, $form_state) {
   module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
   $form = array();
 
@@ -210,14 +223,15 @@ function islandora_reporter_select_query(&$form_state) {
   $queries = islandora_reporter_get_all_queries();
   // Print helpful message if no queries are present.
   if (!$queries) {
-    drupal_set_message('There are no queries in the database. You can create them in' . l(t(' content mangement'), 'admin/content/islandora_reporter'));
+    drupal_set_message('There are no queries in the database. You can create them in' . l(t(' content mangement'), 'admin/islandora/islandora_reporter'));
   }
   foreach ($queries as $query) {
     $index = $query['query_index'];
     $query_name = $query['query_name']?$query['query_name']:$index;
 
     $form[$index]['Label'] = array(
-      '#value' => "<H4>$query_name</H4>",
+      //'#value' => "<H4>$query_name</H4>",
+      '#markup' => "<H4>$query_name</H4>",
     );
     // Parents could be used http://drupal.org/node/781556 only when name set.
     $form[$index]['Select'] = array(
@@ -242,7 +256,7 @@ function islandora_reporter_select_query(&$form_state) {
  * @return array
  *   $form The form definition.
  */
-function islandora_reporter_configure_query(&$form_state, $query_index = NULL) {
+function islandora_reporter_configure_query($form, $form_state, $query_index = NULL) {
   module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
 
   $form = array();
@@ -417,21 +431,20 @@ function islandora_reporter_select_query_submit($form, &$form_state) {
  * @param array &$form_state
  *   The state of the form.
  */
-function islandora_reporter_configure_queries_submit($form,
-&$form_state) {
+function islandora_reporter_configure_queries_submit($form, &$form_state) {
 
   $query_index = $form_state['clicked_button']['#array_parents'][0];
   // Send to add a query.
   if ($form_state['clicked_button']['#value'] == 'Add Query') {
-    $form_state['redirect'] = "admin/content/islandora_reporter/add";
+    $form_state['redirect'] = "admin/islandora/islandora_reporter/add";
   }
   // Send to Edit a query definition.
   if ($form_state['clicked_button']['#value'] == 'Edit') {
-    $form_state['redirect'] = "admin/content/islandora_reporter/$query_index/edit";
+    $form_state['redirect'] = "admin/islandora/islandora_reporter/$query_index/edit";
   }
   // Confirm delete a query definition.
   if ($form_state['clicked_button']['#value'] == 'Delete') {
-    $form_state['redirect'] = "admin/content/islandora_reporter/$query_index/delete";
+    $form_state['redirect'] = "admin/islandora/islandora_reporter/$query_index/delete";
   }
 }
 
@@ -473,7 +486,7 @@ function islandora_reporter_configure_query_submit($form, &$form_state) {
   unset($form['#action']);
 
   // Redirect.
-  $form_state['redirect'] = "admin/content/islandora_reporter";
+  $form_state['redirect'] = "admin/islandora/islandora_reporter";
 }
 
 /**
@@ -498,7 +511,7 @@ function islandora_reporter_delete_query_submit($form, &$form_state) {
   unset($form['destination']);
   unset($form['#action']);
 
-  $form_state['redirect'] = "admin/content/islandora_reporter";
+  $form_state['redirect'] = "admin/islandora/islandora_reporter";
 }
 
 /**
@@ -519,7 +532,7 @@ function islandora_reporter_delete_query_submit($form, &$form_state) {
  *   The results of theme_table() or nothing.
  */
 function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
-  module_load_include('inc', 'fedora_repository', 'api/tuque');
+  //module_load_include('inc', 'fedora_repository', 'api/tuque');
   module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
   $headers = array();
   $rows = array();
@@ -531,15 +544,16 @@ function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
     // Convert to array if string. Lets the report be called via URL.
     if (!is_array($preg_definitions)) {
       $serialized_preg_definitions = $preg_definitions;
-      $preg_definitions = unserialize($preg_definitions);
+      $preg_definitions = unserialize(urldecode($preg_definitions));
     }
     else {
       $serialized_preg_definitions = serialize($preg_definitions);
     }
-
     foreach ($preg_definitions as $preg_definition) {
       $preg = $preg_definition['preg'];
       $replace = $preg_definition['replace'];
+      drupal_set_message($preg);
+      drupal_set_message($replace);
       if (!isset($preg_definition['is_URI'])) {
         $preg_definition['is_URI'] = FALSE;
       }
@@ -555,9 +569,15 @@ function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
     }
   }
 
+  //drupal_set_message(t($query));
   // Run query.
   try {
-    $query_results = $tuque->repository->ri->sparqlQuery($query);
+    if (strstr($query,'PREFIX')) {
+        $query_results = $tuque->repository->ri->sparqlQuery($query);
+    }
+    else {
+        $query_results = $tuque->repository->ri->itqlQuery($query);
+    }
   }
   catch (RepositoryException $e) {
     // Should let people know when the query would be causing a white screen.
@@ -580,7 +600,7 @@ function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
         if ($result_field == $header) {
           if (isset($result_values['uri'])) {
             $value = $result_values['value'];
-            $column_value = l($value, "fedora/repository/$value");
+            $column_value = l($value, "islandora/object/$value");
           }
           else {
             $column_value = $result_values['value'];
@@ -602,7 +622,15 @@ function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
   /* Theme table always returns a table so when we need
    * to return nothing we don't call it.*/
   if ($rows) {
-    return theme_table($headers, $rows);
+    $variables['header'] = $headers;
+    $variables['rows'] = $rows;
+    $variables['attributes'] = array();
+    $variables['caption'] = '';
+    $variables['colgroups'] = array();
+    $variables['sticky'] = FALSE;
+    $variables['empty'] = '';
+    return theme_table($variables);
+    //return theme_table($headers, $rows);
   }
   /* Need to return something to avoid white screen
   if this is the callback function.*/

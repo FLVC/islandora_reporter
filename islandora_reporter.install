@@ -132,9 +132,9 @@
  *
  * This function calls the schema hook for the module.
  */
-function islandora_reporter_install() {
-   drupal_install_schema('islandora_reporter');
-}
+//function islandora_reporter_install() {
+//   drupal_install_schema('islandora_reporter');
+//}
 
 /**
  * This function handles removing the islandora_reporter's
