@@ -127,7 +127,11 @@ function islandora_reporter_run_query($form, $form_state, $query_index) {
 
   $preg_mapping = islandora_reporter_get_pregs_and_labels($query_index);
   foreach ($preg_mapping as $preg => $label) {
-    $form[$preg]['is_URI'] = array(
+    $pregname = str_replace("$","DSIGN_",$preg);
+    $uriname = $pregname . '_isURI';
+    $textname = $pregname . '_text';
+    //$form[$preg]['is_URI'] = array(
+    $form[$uriname] = array(
       '#type' => 'radios',
       '#title' => t('Is URI?'),
       '#options' => array(0 => t('No'), 1 => t('Yes')),
@@ -135,7 +139,8 @@ function islandora_reporter_run_query($form, $form_state, $query_index) {
       '#required' => TRUE,
       '#tree' => TRUE,
     );
-    $form[$preg]['preg'] = array(
+    //$form[$preg]['preg'] = array(
+    $form[$textname] = array(
       '#type' => 'textfield',
       '#title' => $label,
       '#required' => TRUE,
@@ -337,13 +342,13 @@ function islandora_reporter_configure_query($form, $form_state, $query_index = N
  * @return array
  *   $form The form definition.
  */
-function islandora_reporter_delete_query(&$form_state, $query_index) {
+function islandora_reporter_delete_query($form, &$form_state, $query_index) {
   module_load_include('inc', 'islandora_reporter', 'islandora_reporter');
 
   $form = array();
 
   $form['Label'] = array(
-    '#value' => "<H4>Are you sure you want to delete the query definition?</H4>",
+    '#markup' => "<H4>Are you sure you want to delete the query definition?</H4>",
   );
   $form['Delete'] = array(
     '#type' => 'submit',
@@ -380,13 +385,18 @@ function islandora_reporter_run_query_submit($form, &$form_state) {
   $preg_definition = array();
 
   foreach ($preg_mapping as $preg => $label) {
-    if (isset($form[$preg])) {
+    $pregname = str_replace("$","DSIGN_",$preg);
+    $uriname = $pregname . '_isURI';
+    $textname = $pregname . '_text';
+    //if (isset($form[$preg])) {
       $preg_definition[] = array(
         'preg' => $preg,
-        'replace' => $form[$preg]['preg']['#value'],
-        'is_URI' => $form[$preg]['is_URI']['#value']?TRUE:FALSE,
+        'replace' => $form[$textname]['#value'],
+        'is_URI' => $form[$uriname]['#value']?TRUE:FALSE,
+        //'replace' => $form[$preg]['preg']['#value'],
+        //'is_URI' => $form[$preg]['is_URI']['#value']?TRUE:FALSE,
       );
-    }
+    //}
   }
 
   $preg_definition = urlencode(serialize($preg_definition));
@@ -552,8 +562,6 @@ function islandora_reporter_get_report($query_index, $preg_definitions = NULL) {
     foreach ($preg_definitions as $preg_definition) {
       $preg = $preg_definition['preg'];
       $replace = $preg_definition['replace'];
-      drupal_set_message($preg);
-      drupal_set_message($replace);
       if (!isset($preg_definition['is_URI'])) {
         $preg_definition['is_URI'] = FALSE;
       }
